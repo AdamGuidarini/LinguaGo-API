@@ -1,2 +1,2 @@
-# LinguaGo Server
- A simple server for LinguaGo
+# LinguaGo API
+A simple API for LinguaGo, managing its translators all in one place
