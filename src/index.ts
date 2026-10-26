@@ -1,20 +1,28 @@
 import express, { Request, Response } from 'express';
+import { ILanguage, ITranslation } from './interfaces/global-transation-interfaces.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Hello, world!');
+/**
+ * Retrieves all languages and pairs from Libre Translate
+ */
+app.get('/api/libretranslate/languages', (req: Request, res: Response<ILanguage[]>) => {
+  res.send([]);
 });
 
-app.get('/api/hello', (req: Request, res: Response) => {
-  res.json({ message: 'Hello from Express!' });
+app.post('/api/libretranslate/translate', (req: Request, res: Response<ITranslation>) => {
+  res.send(req as unknown as ITranslation);
 });
 
-app.post('/api/echo', (req: Request, res: Response) => {
-  res.json({ you_sent: req.body });
+app.get('/api/apertium/languages', (req: Request, res: Response<ILanguage[]>) => {
+  res.send([]);
+});
+
+app.post('/api/apertium/translate', (req: Request, res: Response<ITranslation>) => {
+  res.send(req as unknown as ITranslation);
 });
 
 app.listen(PORT, () => {
