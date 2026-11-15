@@ -17,3 +17,8 @@ export interface ITranslation {
     timestamp?: string;
     translator: Transaltor
 }
+
+export interface ITranslator {
+    getLanguages: () => Promise<ILanguage[]>;
+    translate: (source: string, target: string, text: string) => Promise<ITranslation>
+}

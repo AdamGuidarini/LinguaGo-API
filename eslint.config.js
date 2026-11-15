@@ -35,7 +35,7 @@ export default defineConfig({
                 BlockStatement: 'always',
                 ArrowFunctionExpression: 'always',
                 FunctionDeclaration: 'always',
-                FunctionExpression: 'always',
+                FunctionExpression: { minElements: 1, consistent: true },
                 Property: { 'multiline': true },
                 ClassBody: 'always',
                 StaticBlock: 'always',

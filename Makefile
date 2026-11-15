@@ -1,6 +1,8 @@
 .PHONY: build up down stop start logs dev-build dev
 
 POD := linguago-api
+APY_URL := http://localhost:2737
+LT_URL  := http://localhost:5000
 
 build:
 	podman build -t linguago-api -f app/Containerfile app
@@ -24,8 +26,9 @@ dev: dev-build
 	podman run -d --pod $(POD) --name $(POD)-apy --memory 2g \
 	  localhost/linguago-apy:latest
 	podman run -d --pod $(POD) --name $(POD)-app \
-	  -e APY_URL=http://localhost:2737 \
-	  -e LT_URL=http://localhost:5000 \
+	  -e APY_URL=$(APY_URL) \
+	  -e LT_URL=$(LT_URL) \
+		-e LC_ALL=C \
 	  -v $(CURDIR)/app/src:/app/src:Z \
 	  localhost/linguago-api-dev:latest
 
