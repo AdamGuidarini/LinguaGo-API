@@ -1,0 +1,11 @@
+FROM docker.io/library/debian:bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      wget ca-certificates lsb-release gnupg \
+    && wget -q https://apertium.projectjj.com/apt/install-release.sh \
+    && bash install-release.sh \
+    && apt-get install -y --no-install-recommends apertium apertium-apy apertium-all-dev \
+    && rm -rf /var/lib/apt/lists/* install-release.sh
+
+EXPOSE 2737
+CMD ["apertium-apy", "--port", "2737", "--pairs-path", "/usr/share/apertium"]

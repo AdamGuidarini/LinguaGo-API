@@ -1,0 +1,40 @@
+{
+  "name": "LinguaGo-API",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/AdamGuidarini/LinguaGo-API.git",
+  "author": "Adam Guidarini <adamguidarini@protonmail.com>",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "private": "true",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "dev": "yarn build && concurrently -k -n tsc,node \"tsc --watch --preserveWatchOutput\" \"node --watch dist/index.js\"",
+    "test": "vitest",
+    "clean": "rm -rf dist/ node_modules/",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "start:dev": "make -C .. dev && podman logs -f linguago-api-app",
+    "start:dev:detached": "make -C .. dev"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.0",
+    "concurrently": "^10.0.7",
+    "eslint": "^10.0.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: linguago-api
+spec:
+  containers:
+    - name: app
+      image: localhost/linguago-api-dev:latest
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+      env:
+        - name: APY_URL
+          value: http://localhost:2737
+        - name: LT_URL
+          value: http://localhost:5000
+      volumeMounts:
+        - name: app-src
+          mountPath: /app/src
+
+    - name: apy
+      image: localhost/linguago-apy:latest
+      resources:
+        limits:
+          memory: 2Gi
+
+    - name: lt
+      image: docker.io/libretranslate/libretranslate:latest
+      resources:
+        limits:
+          memory: 8Gi
+      volumeMounts:
+        - name: lt-data
+          mountPath: /home/libretranslate/.local
+
+  volumes:
+    - name: app-src
+      hostPath:
+        path: ~/Projects/LinguaGo-Server/app/src
+        type: Directory
