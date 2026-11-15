@@ -4,8 +4,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       wget ca-certificates lsb-release gnupg \
     && wget -q https://apertium.projectjj.com/apt/install-release.sh \
     && bash install-release.sh \
+    && apt-get update \
     && apt-get install -y --no-install-recommends apertium apertium-apy apertium-all-dev \
+    && apt-get install -y --no-install-recommends $(apt-cache search --names-only '^apertium-[a-z]+-[a-z]+$' | awk '{print $1}') \
     && rm -rf /var/lib/apt/lists/* install-release.sh
 
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
 EXPOSE 2737
-CMD ["apertium-apy", "--port", "2737", "--pairs-path", "/usr/share/apertium"]
+CMD ["apertium-apy", "-p", "2737", "/usr/share/apertium"]

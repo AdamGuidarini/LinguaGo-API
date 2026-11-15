@@ -7,14 +7,14 @@ export class ApertiumClient extends HttpClient {
     super(baseUrl);
   }
 
-  async getLanguages(locale: string = 'en'): Promise<ILanguage[]> {
-    const listPairs = (await this.get<IApertiumResponse<IApertiumLanguageCode[]>>('/listpairs')).responseData;
+  async getLanguages(locale: string = 'en_US'): Promise<ILanguage[]> {
+    const listPairs = (await this.get<IApertiumResponse<IApertiumLanguageCode[]>>('/listPairs')).responseData;
     const codes = new Set<string>();
 
     listPairs.forEach((p) => codes.add(p.sourceLanguage));
 
     const langNames = await this.get<IApertiumLanguageNames>(
-      `${this.baseUrl}/listLanguageNames?locale=${locale}${codes.size > 0 ? '&languages=' : ''}${Array.from(codes.values()).join('+')}`
+      `/listLanguageNames?locale=${locale}${codes.size > 0 ? '&languages=' : ''}${Array.from(codes.values()).join('+')}`
     );
 
     return Array.from(codes).map(

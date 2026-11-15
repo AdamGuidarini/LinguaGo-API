@@ -15,7 +15,19 @@ app.use(express.json());
 /**
  * Retrieves all languages and pairs from Libre Translate
  */
-app.get('/api/libretranslate/languages', async (req: Request, res: Response<ILanguage[] | { error: string }>) => {
+app.get('/libretranslate/languages', async (req: Request, res: Response<ILanguage[] | { error: string }>) => {
+  try {
+    res.send([]);
+  } catch {
+    res.status(502).json({ error: 'Apertium unavailable' });
+  }
+});
+
+app.post('/libretranslate/translate', (req: Request, res: Response<ITranslation>) => {
+  res.send(req as unknown as ITranslation);
+});
+
+app.get('/apertium/languages', async (req: Request, res: Response<ILanguage[] | { error: string }>) => {
   try {
     res.send(await apertium.getLanguages());
   } catch {
@@ -23,15 +35,7 @@ app.get('/api/libretranslate/languages', async (req: Request, res: Response<ILan
   }
 });
 
-app.post('/api/libretranslate/translate', (req: Request, res: Response<ITranslation>) => {
-  res.send(req as unknown as ITranslation);
-});
-
-app.get('/api/apertium/languages', (req: Request, res: Response<ILanguage[]>) => {
-  res.send([]);
-});
-
-app.post('/api/apertium/translate', (req: Request, res: Response<ITranslation>) => {
+app.post('/apertium/translate', (req: Request, res: Response<ITranslation>) => {
   res.send(req as unknown as ITranslation);
 });
 

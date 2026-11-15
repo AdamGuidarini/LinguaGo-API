@@ -28,6 +28,7 @@ dev: dev-build
 	podman run -d --pod $(POD) --name $(POD)-app \
 	  -e APY_URL=$(APY_URL) \
 	  -e LT_URL=$(LT_URL) \
+		-e LC_ALL=C \
 	  -v $(CURDIR)/app/src:/app/src:Z \
 	  localhost/linguago-api-dev:latest
 

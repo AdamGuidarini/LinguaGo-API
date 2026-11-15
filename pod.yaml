@@ -23,6 +23,12 @@ spec:
       resources:
         limits:
           memory: 2Gi
+      env:
+        - name: LC_ALL
+          value: C.UTF-8
+        - name: LANG
+          value: C.UTF-8
+
 
     - name: lt
       image: docker.io/libretranslate/libretranslate:latest
