@@ -25,6 +25,14 @@ app.post('/api/apertium/translate', (req: Request, res: Response<ITranslation>) 
   res.send(req as unknown as ITranslation);
 });
 
+app.get('/', (_req, res) => {
+  res.json({ name: 'linguago-api', status: 'ok' });
+});
+
+app.get('/health', (_req, res) => {
+  res.send('ok');
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
