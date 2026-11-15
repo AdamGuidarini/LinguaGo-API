@@ -1,6 +1,6 @@
 FROM docker.io/library/node:22-bookworm-slim
 WORKDIR /app
-COPY package.json yarn.lock ./
+COPY package.json yarn.lock tsconfig.json ./
 RUN yarn install --frozen-lockfile
 EXPOSE 3000
 CMD ["yarn", "dev"]

@@ -15,7 +15,9 @@
     "test": "vitest",
     "clean": "rm -rf dist/ node_modules/",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "start:dev": "make -C .. dev && podman logs -f linguago-api-app",
+    "start:dev:detached": "make -C .. dev"
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
