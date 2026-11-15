@@ -1,11 +1,12 @@
 {
-  "name": "LinguaGo-Server",
+  "name": "LinguaGo-API",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/AdamGuidarini/LinguaGo-Server.git",
+  "repository": "https://github.com/AdamGuidarini/LinguaGo-API.git",
   "author": "Adam Guidarini <adamguidarini@protonmail.com>",
   "license": "GPL-3.0-only",
   "type": "module",
+  "private": "true",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -25,6 +26,8 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.0",
+    "concurrently": "^10.0.7",
     "eslint": "^10.0.1",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
