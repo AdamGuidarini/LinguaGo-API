@@ -21,7 +21,11 @@ export class HttpClient {
   private async request<T>(path: string, init: RequestInit = {}, timeoutMs = this.timeoutMs): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const r = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-    if (!r.ok) throw new Error(`${init.method ?? 'GET'} ${url} responded ${r.status}`);
+
+    if (!r.ok) { 
+      throw new Error(`${init.method ?? 'GET'} ${url} responded ${r.status}`);
+    };
+
     return (await r.json()) as T;
   }
 }

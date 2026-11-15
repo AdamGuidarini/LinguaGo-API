@@ -1,5 +1,5 @@
-import { config } from './config.js';
 import express, { Request, Response } from 'express';
+import { config } from './config.js';
 import { ILanguage, ITranslation } from './interfaces/global-transation-interfaces.ts';
 import { ApertiumClient } from './TranslationClients/ApertiumClient/ApertiumClient.ts';
 import { LibreTranslateClient } from './TranslationClients/LibreTranslateClient/LibreTranslateClient.ts';

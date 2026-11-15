@@ -3,19 +3,43 @@ import { ILanguage } from '../../interfaces/global-transation-interfaces.ts';
 import { HttpClient } from '../HttpClient/HttpClient.ts';
 
 export class ApertiumClient extends HttpClient {
-  constructor(baseUrl: string) {
-    super(baseUrl);
-  }
 
-  async getLanguages(locale: string = 'en_US'): Promise<ILanguage[]> {
-    const listPairs = (await this.get<IApertiumResponse<IApertiumLanguageCode[]>>('/listPairs')).responseData;
+  /**
+   * Retrieves all of Apertium's languages and pairs
+   * @param locale Language locale, what language should the language names be in
+   * @returns All Apertium languages and codes
+   */
+  async getLanguages(locale = 'en'): Promise<ILanguage[]> {
+
+    let listPairs: IApertiumLanguageCode[];
     const codes = new Set<string>();
+
+    try {
+      listPairs = (await this.get<IApertiumResponse<IApertiumLanguageCode[]>>('/listPairs')).responseData;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+
+      throw new Error(
+        `Error retrieving language codes from Apertium: ${detail}`,
+        { cause: error }
+      );
+    }
 
     listPairs.forEach((p) => codes.add(p.sourceLanguage));
 
-    const langNames = await this.get<IApertiumLanguageNames>(
-      `/listLanguageNames?locale=${locale}${codes.size > 0 ? '&languages=' : ''}${Array.from(codes.values()).join('+')}`
-    );
+    let langNames: IApertiumLanguageNames;
+
+    try {
+      langNames = await this.get<IApertiumLanguageNames>(
+        `/listLanguageNames?locale=${locale}${codes.size > 0 ? '&languages=' : ''}${Array.from(codes.values()).join('+')}`
+      );
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+
+      throw new Error(`Error retrieving language names from Apertium: ${detail}`,
+        { cause: error }
+      );
+    }
 
     return Array.from(codes).map(
       (code) => ({
