@@ -1,16 +1,20 @@
-import { IApertiumLanguageCode, IApertiumLanguageNames, IApertiumResponse } from '../../interfaces/apertium-interfaces.ts';
-import { ILanguage } from '../../interfaces/global-transation-interfaces.ts';
+import {
+  IApertiumLanguageCode,
+  IApertiumLanguageNames,
+  IApertiumResponse,
+  IApertiumTranslationRepsonse
+} from '../../interfaces/apertium-interfaces.ts';
+import { ILanguage, ITranslation, ITranslator } from '../../interfaces/global-transation-interfaces.ts';
+import { Transaltor } from '../../interfaces/translator.ts';
 import { HttpClient } from '../HttpClient/HttpClient.ts';
 
-export class ApertiumClient extends HttpClient {
-
+export class ApertiumClient extends HttpClient implements ITranslator {
   /**
    * Retrieves all of Apertium's languages and pairs
    * @param locale Language locale, what language should the language names be in
    * @returns All Apertium languages and codes
    */
   async getLanguages(locale = 'en'): Promise<ILanguage[]> {
-
     let listPairs: IApertiumLanguageCode[];
     const codes = new Set<string>();
 
@@ -51,4 +55,36 @@ export class ApertiumClient extends HttpClient {
       })
     );
   }
+
+  /**
+   * Translates text from source language to target language
+   * @param source Text's original language
+   * @param target Text's target language
+   * @param text Text to translate
+   * @returns ITranslation for the provided arguments
+   */
+  async translate(source: string, target: string, text: string): Promise<ITranslation> {
+    let apyTranslation: IApertiumResponse<IApertiumTranslationRepsonse>;
+
+    try {
+      apyTranslation = await this.get<IApertiumResponse<IApertiumTranslationRepsonse>>(
+        '/translate',
+        { langpair: `${source}|${target}`, q: text }
+      );
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+
+      throw new Error(`Error translating in Apertium: ${detail}`,
+        { cause: error }
+      );
+    }
+
+    return {
+      source,
+      target,
+      result: apyTranslation.responseData.translatedText,
+      original: text,
+      translator: Transaltor.APERTIUM
+    };
+  };
 }

@@ -15,7 +15,7 @@ const LANG_NAME_ERR = 'lang name err';
 
 describe('ApertiumClient', () => {
   let apyClient: ApertiumClient;
-  let reject = false;
+  let reject: string;
 
   beforeEach(() => {
     apyClient = new ApertiumClient(
@@ -28,13 +28,13 @@ describe('ApertiumClient', () => {
       const fetchCallBack = (input: RequestInfo | URL): Promise<Response> => {
 
         if ((input as string).includes('listPairs')) {
-          if (reject) {
+          if (reject && reject.includes('listPairs')) {
             throw new Error(LANG_CODE_ERR);
           }
 
           return Promise.resolve(new Response(JSON.stringify({ responseData: pairs })));
         } else if ((input as string).includes('listLanguageNames')) {
-          if (reject) {
+          if (reject && reject.includes('listLanguageNames')) {
             throw new Error(LANG_NAME_ERR);
           }
 
@@ -75,10 +75,18 @@ describe('ApertiumClient', () => {
     });
 
     it('should throw an error in language codes cannot be retrieved', async () => {
-      reject = true;
+      reject = 'listPairs';
 
       await expect(apyClient.getLanguages()).rejects.toThrow(
         new Error(`Error retrieving language codes from Apertium: ${LANG_CODE_ERR}`)
+      );
+    });
+
+    it('should throw an error in language names cannot be retrieved', async () => {
+      reject = 'listLanguageNames';
+
+      await expect(apyClient.getLanguages()).rejects.toThrow(
+        new Error(`Error retrieving language names from Apertium: ${LANG_NAME_ERR}`)
       );
     });
   });

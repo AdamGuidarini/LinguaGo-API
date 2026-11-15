@@ -30,13 +30,34 @@ app.post('/libretranslate/translate', (req: Request, res: Response<ITranslation>
 app.get('/apertium/languages', async (req: Request, res: Response<ILanguage[] | { error: string }>) => {
   try {
     res.send(await apertium.getLanguages());
-  } catch {
-    res.status(502).json({ error: 'Apertium unavailable' });
+  } catch (error) {
+    const err = error instanceof Error ? error.message : error as string;
+
+    console.error(`Failed to retrieve Apertium languages: ${error}`);
+
+    res.status(500).json({ error: err });
   }
 });
 
-app.post('/apertium/translate', (req: Request, res: Response<ITranslation>) => {
-  res.send(req as unknown as ITranslation);
+app.post('/apertium/translate', async (req: Request, res: Response<ITranslation | { error: string }>) => {
+  const body: unknown = req.body;
+
+  if (
+    typeof body !== 'object' || body === null ||
+    !('source' in body) || typeof body.source !== 'string' || !body.source.trim() ||
+    !('target' in body) || typeof body.target !== 'string' || !body.target.trim() ||
+    !('text' in body) || typeof body.text !== 'string' || !body.text.trim()
+  ) {
+    res.status(400).json({ error: 'source, target, and text must be non-empty strings' });
+    return;
+  }
+
+  try {
+    res.json(await apertium.translate(body.source, body.target, body.text));
+  } catch (error) {
+    console.error('Failed to translate with Apertium:', error);
+    res.status(502).json({ error: 'Apertium translation unavailable' });
+  }
 });
 
 app.get('/', (_req, res) => {

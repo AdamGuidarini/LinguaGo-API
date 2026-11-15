@@ -1,4 +1,3 @@
-
 export class HttpClient {
   constructor(
     protected readonly baseUrl: string,
@@ -7,6 +6,7 @@ export class HttpClient {
 
   protected async get<T>(path: string, params?: Record<string, string>): Promise<T> {
     const query = params ? `?${new URLSearchParams(params)}` : '';
+
     return this.request<T>(`${path}${query}`);
   }
 
@@ -22,7 +22,7 @@ export class HttpClient {
     const url = `${this.baseUrl}${path}`;
     const r = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 
-    if (!r.ok) { 
+    if (!r.ok) {
       throw new Error(`${init.method ?? 'GET'} ${url} responded ${r.status}`);
     };
 

@@ -5,6 +5,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     exclude: [...configDefaults.exclude],
-    include: ['./**/*.spec.ts']
+    include: ['./**/*.spec.ts'],
+    coverage: { provider: 'v8' }
   }
 });

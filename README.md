@@ -142,9 +142,18 @@ Memory limits for each container are set in `pod.yaml` under `resources.limits.m
 
 ## API
 
-> TODO: document the endpoints once the routing layer is finalized.
+The app exposes `GET /`, `GET /health`, and `GET /apertium/languages`.
+To translate with Apertium, send a JSON body containing non-empty `source`,
+`target`, and `text` strings:
 
-For now, the app exposes `GET /` and `GET /health`.
+```bash
+curl -X POST http://localhost:3000/apertium/translate \
+  -H 'Content-Type: application/json' \
+  -d '{"source":"eng","target":"spa","text":"Hello world"}'
+```
+
+Language pairs depend on the configured Apertium server. Invalid request fields
+return HTTP 400; an upstream translation failure returns HTTP 502.
 
 ## Verifying the setup
 
