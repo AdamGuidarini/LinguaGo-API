@@ -9,7 +9,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 const apertium = new ApertiumClient(config.apyUrl);
-const libre = new LibreTranslateClient(config.ltUrl);
+const libre = new LibreTranslateClient(config.ltUrl, config.ltKey);
 
 app.use(express.json());
 
