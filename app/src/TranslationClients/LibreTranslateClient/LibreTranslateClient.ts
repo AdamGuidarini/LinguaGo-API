@@ -2,6 +2,10 @@ import { ILanguage, ITranslation, ITranslator } from '../../interfaces/global-tr
 import { HttpClient } from '../HttpClient/HttpClient.ts';
 
 export class LibreTranslateClient extends HttpClient implements ITranslator {
+  constructor(baseUrl: string) {
+    super(baseUrl, undefined, 'LibreTranslate');
+  }
+
   async getLanguages(): Promise<ILanguage[]> {
     return Promise.resolve([]);
   }
