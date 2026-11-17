@@ -8,7 +8,7 @@ It runs as a single Podman pod with three containers:
 |---|---|---|
 | `app` | Node.js + Express API, written in TypeScript (the only public entry point) | 3000 (published) |
 | `apy` | [Apertium](https://apertium.org) via APY, with all language pairs | 2737 |
-| `lt` | [LibreTranslate](https://libretranslate.com) (official image) | 5000 |
+| `lt` | [LibreTranslate](https://libretranslate.com) (official image + all models baked in) | 5000 |
 
 All containers share `localhost` inside the pod. Only port 3000 is published to the host, so APY and LibreTranslate are not reachable from outside.
 
@@ -25,6 +25,8 @@ LinguaGo-Server/
 │   └── src/
 ├── apy/
 │   └── Containerfile
+├── lt/
+│   └── Containerfile        # official LibreTranslate image + all Argos models baked in
 ├── pod.yaml                 # production-style pod
 ├── pod.dev.yaml             # dev pod (bind-mounts app/src)
 ├── Makefile
@@ -48,7 +50,7 @@ make up     # production-style build
 
 Both use the same pod name (`linguago-api`) and both publish port 3000, so only one can run at a time. Starting one replaces the other.
 
-The first start is slow: the APY image installs all Apertium packages, and LibreTranslate downloads its models into the `lt-data` volume. Watch progress with `podman logs -f linguago-api-lt`.
+The first `make build-lt` is slow: it downloads every Argos Translate model into the `linguago-lt` image (tens of GB of disk, so run it once and let Podman cache the layer). After that, pod starts are fast and no model is ever downloaded at runtime.
 
 ## Development workflow
 
@@ -90,6 +92,7 @@ This builds both images and starts the pod from `pod.yaml`. The app image is a m
 Without make:
 
 ```bash
+podman build -t linguago-lt -f lt/Containerfile lt   # slow on first run: downloads all models
 podman build -t linguago-api -f app/Containerfile app
 podman build -t linguago-apy -f apy/Containerfile apy
 podman kube play --replace pod.yaml
@@ -101,7 +104,8 @@ podman kube play --replace pod.yaml
 |---|---|
 | `make dev` | Build the dev image and start the dev pod (hot reload) |
 | `make up` | Build both images and start the production-style pod |
-| `make build` | Build the `app` and `apy` images only |
+| `make build` | Build the `app`, `apy`, and `lt` images |
+| `make build-lt` | Build only the `lt` image (downloads all LibreTranslate models; slow on first run) |
 | `make down` | Remove the pod immediately (keeps the `lt-data` volume) |
 | `make stop` | Stop the pod without removing it |
 | `make start` | Start a stopped pod (reuses existing containers) |
@@ -174,7 +178,7 @@ podman exec linguago-api-app node -e "fetch('http://localhost:5000/languages').t
 ## Resource usage
 
 - **Apertium:** pairs are small rule-based dictionaries and use little RAM until a translation runs.
-- **LibreTranslate:** each language is a neural model. Loading all of them needs several GB of disk and a lot of RAM, and the first start downloads everything. Models are cached in the `lt-data` volume, so later starts are faster.
+- **LibreTranslate:** each language is a neural model. All models are baked into the `linguago-lt` image at build time (the image is tens of GB on disk), so no downloads happen at runtime and the first translation of any pair is as fast as any other. Models still load into RAM on demand; use `--load-only` (see below) to cap that.
 - To reduce memory use, load fewer languages by adding `args: ["--load-only", "en,es,fr"]` to the `lt` container in both pod files.
 
 ## Troubleshooting
@@ -182,7 +186,7 @@ podman exec linguago-api-app node -e "fetch('http://localhost:5000/languages').t
 - **`lt` exits with code 137:** it was OOM-killed. Raise its memory limit in the pod files or load fewer languages.
 - **Permission errors on `lt-data` (rootless Podman):** check the container's UID with `podman exec linguago-api-lt id`, then fix ownership with `podman unshare chown -R <uid>:<gid> $(podman volume inspect lt-data -f '{{.Mountpoint}}')`.
 - **`apy` fails to start:** check `podman logs linguago-api-apy`. Usually a wrong `apertium-apy` flag or the package missing from the repo.
-- **Image not found on `kube play`:** confirm the builds succeeded and the image names in the pod files match `podman images` (`linguago-api`, `linguago-api-dev`, `linguago-apy`).
+- **Image not found on `kube play`:** confirm the builds succeeded and the image names in the pod files match `podman images` (`linguago-api`, `linguago-api-dev`, `linguago-apy`, `linguago-lt`).
 - **Port 3000 in use:** a leftover pod or `rootlessport` process may be holding it. Check with `ss -ltnp | grep ':3000'` and `podman pod ps`, then `make down`. Otherwise change `hostPort` in the pod files.
 - **Dev app doesn't reload on save:** check `podman logs -f linguago-api-app` to confirm `tsc --watch` is running. On macOS/Windows (podman machine), file events over bind mounts can be unreliable, so enable polling in `tsconfig.json` with `"watchOptions": {"watchFile": "fixedPollingInterval"}`.
 - **"Permission denied" reading `/app/src` in dev (SELinux):** the bind mount needs relabeling. Use an absolute `hostPath` and check podman's SELinux labelling for the mount.
@@ -192,5 +196,5 @@ podman exec linguago-api-app node -e "fetch('http://localhost:5000/languages').t
 
 ```bash
 make down                  # remove the pod
-podman volume rm lt-data   # also delete cached LibreTranslate models
+podman volume rm lt-data   # runtime state only; models live in the linguago-lt image
 ```

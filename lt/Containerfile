@@ -1,0 +1,13 @@
+FROM docker.io/libretranslate/libretranslate:latest
+
+# Bake every Argos Translate model into the image so no model is ever
+# downloaded at runtime. The upstream image keeps its Python deps in
+# /app/venv and runs as the libretranslate user, so the install must run
+# as that user with that interpreter. Packages go to /opt/lt-packages
+# (not /home/libretranslate/.local) so the lt-data volume cannot shadow them.
+USER root
+ENV ARGOS_TRANSLATE_PACKAGES_DIR=/opt/lt-packages
+RUN mkdir -p /opt/lt-packages && chown -R libretranslate:libretranslate /opt/lt-packages
+USER libretranslate
+WORKDIR /app
+RUN ./venv/bin/python scripts/install_models.py
