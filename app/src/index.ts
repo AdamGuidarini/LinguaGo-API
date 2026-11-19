@@ -5,6 +5,7 @@ import { ILanguage, ITranslation, ITranslator } from './interfaces/global-transa
 import { Transaltor } from './interfaces/translator.ts';
 import { ApertiumClient } from './TranslationClients/ApertiumClient/ApertiumClient.ts';
 import { LibreTranslateClient } from './TranslationClients/LibreTranslateClient/LibreTranslateClient.ts';
+import { parseTranslationBody } from './validation.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -19,25 +20,6 @@ const libre = translators[Transaltor.LIBRETRANSLATE];
 
 app.use(express.json());
 express.json({ limit: '10kb' });
-
-interface ITranslationBody {
-  source: string;
-  target: string;
-  text: string;
-}
-
-function parseTranslationBody(body: unknown): ITranslationBody {
-  if (
-    typeof body !== 'object' || body === null ||
-    !('source' in body) || typeof body.source !== 'string' || !body.source.trim() ||
-    !('target' in body) || typeof body.target !== 'string' || !body.target.trim() ||
-    !('text' in body) || typeof body.text !== 'string' || !body.text.trim()
-  ) {
-    throw new HttpError(400, 'source, target, and text must be non-empty strings');
-  }
-
-  return body as unknown as ITranslationBody;
-}
 
 /**
  * Retrieves all languages and pairs from Libre Translate
