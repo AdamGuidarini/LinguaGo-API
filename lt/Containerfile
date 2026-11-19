@@ -6,7 +6,7 @@ FROM docker.io/libretranslate/libretranslate:latest
 # as that user with that interpreter. Packages go to /opt/lt-packages
 # (not /home/libretranslate/.local) so the lt-data volume cannot shadow them.
 USER root
-ENV ARGOS_TRANSLATE_PACKAGES_DIR=/opt/lt-packages
+ENV ARGOS_PACKAGE_DIR=/opt/lt-packages
 RUN mkdir -p /opt/lt-packages && chown -R libretranslate:libretranslate /opt/lt-packages
 USER libretranslate
 WORKDIR /app

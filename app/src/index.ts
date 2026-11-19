@@ -12,6 +12,7 @@ const apertium = new ApertiumClient(config.apyUrl);
 const libre = new LibreTranslateClient(config.ltUrl, config.ltKey);
 
 app.use(express.json());
+express.json({ limit: '10kb' });
 
 /**
  * Retrieves all languages and pairs from Libre Translate
@@ -20,8 +21,19 @@ app.get('/libretranslate/languages', async (_req: Request, res: Response<ILangua
   res.send(await libre.getLanguages());
 });
 
-app.post('/libretranslate/translate', (req: Request, res: Response<ITranslation>) => {
-  res.send(req as unknown as ITranslation);
+app.post('/libretranslate/translate', async (req: Request, res: Response<ITranslation>) => {
+  const body: unknown = req.body;
+
+  if (
+    typeof body !== 'object' || body === null ||
+    !('source' in body) || typeof body.source !== 'string' || !body.source.trim() ||
+    !('target' in body) || typeof body.target !== 'string' || !body.target.trim() ||
+    !('text' in body) || typeof body.text !== 'string' || !body.text.trim()
+  ) {
+    throw new HttpError(400, 'source, target, and text must be non-empty strings');
+  }
+
+  res.json(await libre.translate(body.source, body.target, body.text));
 });
 
 app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>) => {
