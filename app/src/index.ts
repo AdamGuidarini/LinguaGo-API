@@ -1,15 +1,22 @@
 import express, { NextFunction, Request, Response } from 'express';
 import { config } from './config.js';
 import { HttpError, UpstreamError } from './errors.ts';
-import { ILanguage, ITranslation } from './interfaces/global-transation-interfaces.ts';
+import { ILanguage, ITranslation, ITranslator } from './interfaces/global-transation-interfaces.ts';
+import { Transaltor } from './interfaces/translator.ts';
 import { ApertiumClient } from './TranslationClients/ApertiumClient/ApertiumClient.ts';
 import { LibreTranslateClient } from './TranslationClients/LibreTranslateClient/LibreTranslateClient.ts';
+import { parseTranslationBody } from './validation.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-const apertium = new ApertiumClient(config.apyUrl);
-const libre = new LibreTranslateClient(config.ltUrl, config.ltKey);
+const translators: Record<Transaltor, ITranslator> = {
+  [Transaltor.APERTIUM]: new ApertiumClient(config.apyUrl),
+  [Transaltor.LIBRETRANSLATE]: new LibreTranslateClient(config.ltUrl, config.ltKey),
+};
+
+const apertium = translators[Transaltor.APERTIUM];
+const libre = translators[Transaltor.LIBRETRANSLATE];
 
 app.use(express.json());
 express.json({ limit: '10kb' });
@@ -22,18 +29,8 @@ app.get('/libretranslate/languages', async (_req: Request, res: Response<ILangua
 });
 
 app.post('/libretranslate/translate', async (req: Request, res: Response<ITranslation>) => {
-  const body: unknown = req.body;
-
-  if (
-    typeof body !== 'object' || body === null ||
-    !('source' in body) || typeof body.source !== 'string' || !body.source.trim() ||
-    !('target' in body) || typeof body.target !== 'string' || !body.target.trim() ||
-    !('text' in body) || typeof body.text !== 'string' || !body.text.trim()
-  ) {
-    throw new HttpError(400, 'source, target, and text must be non-empty strings');
-  }
-
-  res.json(await libre.translate(body.source, body.target, body.text));
+  const { source, target, text } = parseTranslationBody(req.body);
+  res.json(await libre.translate(source, target, text));
 });
 
 app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>) => {
@@ -41,18 +38,37 @@ app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>)
 });
 
 app.post('/apertium/translate', async (req: Request, res: Response<ITranslation>) => {
+  const { source, target, text } = parseTranslationBody(req.body);
+  res.json(await apertium.translate(source, target, text));
+});
+
+/**
+ * Lists the available translation backends
+ */
+app.get('/translators', (_req: Request, res: Response<Transaltor[]>) => {
+  res.json(Object.values(Transaltor));
+});
+
+/**
+ * Unified translation endpoint. Routes to the backend named in the
+ * `translator` field ("apertium" or "libretranslate").
+ */
+app.post('/translate', async (req: Request, res: Response<ITranslation>) => {
   const body: unknown = req.body;
 
   if (
     typeof body !== 'object' || body === null ||
-    !('source' in body) || typeof body.source !== 'string' || !body.source.trim() ||
-    !('target' in body) || typeof body.target !== 'string' || !body.target.trim() ||
-    !('text' in body) || typeof body.text !== 'string' || !body.text.trim()
+    !('translator' in body) ||
+    typeof body.translator !== 'string' ||
+    !Object.values(Transaltor).includes(body.translator as Transaltor)
   ) {
-    throw new HttpError(400, 'source, target, and text must be non-empty strings');
+    throw new HttpError(400, `translator must be one of: ${Object.values(Transaltor).join(', ')}`);
   }
 
-  res.json(await apertium.translate(body.source, body.target, body.text));
+  const { source, target, text } = parseTranslationBody(body);
+  const client = translators[body.translator as Transaltor];
+
+  res.json(await client.translate(source, target, text));
 });
 
 app.get('/', (_req, res) => {
