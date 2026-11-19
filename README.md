@@ -146,18 +146,34 @@ Memory limits for each container are set in `pod.yaml` under `resources.limits.m
 
 ## API
 
-The app exposes `GET /`, `GET /health`, and `GET /apertium/languages`.
-To translate with Apertium, send a JSON body containing non-empty `source`,
-`target`, and `text` strings:
+| Endpoint | Description |
+|---|---|
+| `GET /` | Service name and status |
+| `GET /health` | Health check |
+| `GET /translators` | List available translation backends (`apertium`, `libretranslate`) |
+| `POST /translate` | Unified translation — routes to the backend named in `translator` |
+| `GET /apertium/languages` | Apertium languages and pairs |
+| `POST /apertium/translate` | Translate via Apertium |
+| `GET /libretranslate/languages` | LibreTranslate languages |
+| `POST /libretranslate/translate` | Translate via LibreTranslate |
+
+### Unified translation
+
+`POST /translate` accepts a JSON body with non-empty `source`, `target`, `text`
+strings and a `translator` field naming the backend:
 
 ```bash
-curl -X POST http://localhost:3000/apertium/translate \
+curl -X POST http://localhost:3000/translate \
   -H 'Content-Type: application/json' \
-  -d '{"source":"eng","target":"spa","text":"Hello world"}'
+  -d '{"translator":"libretranslate","source":"auto","target":"es","text":"Hello world"}'
 ```
 
-Language pairs depend on the configured Apertium server. Invalid request fields
-return HTTP 400; an upstream translation failure returns HTTP 502.
+`source` may be `"auto"` for LibreTranslate to detect the language.
+Language pairs depend on the chosen backend. Invalid request fields return
+HTTP 400; an upstream translation failure returns HTTP 502 (504 on timeout).
+
+The per-backend endpoints (`/apertium/translate`, `/libretranslate/translate`)
+take the same body minus the `translator` field.
 
 ## Verifying the setup
 
