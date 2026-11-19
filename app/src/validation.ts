@@ -1,10 +1,5 @@
 import { HttpError } from './errors.ts';
-
-export interface ITranslationBody {
-  source: string;
-  target: string;
-  text: string;
-}
+import { ITranslationBody } from './interfaces/translate-body.ts';
 
 /**
  * Validates that a request body has non-empty string source, target, and
