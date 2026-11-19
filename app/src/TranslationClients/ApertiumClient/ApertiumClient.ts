@@ -1,3 +1,4 @@
+import { UpstreamError } from '../../errors.ts';
 import {
   IApertiumLanguageCode,
   IApertiumLanguageNames,
@@ -9,6 +10,10 @@ import { Transaltor } from '../../interfaces/translator.ts';
 import { HttpClient } from '../HttpClient/HttpClient.ts';
 
 export class ApertiumClient extends HttpClient implements ITranslator {
+  constructor(baseUrl: string) {
+    super(baseUrl, undefined, 'Apertium');
+  }
+
   /**
    * Retrieves all of Apertium's languages and pairs
    * @param locale Language locale, what language should the language names be in
@@ -21,12 +26,7 @@ export class ApertiumClient extends HttpClient implements ITranslator {
     try {
       listPairs = (await this.get<IApertiumResponse<IApertiumLanguageCode[]>>('/listPairs')).responseData;
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-
-      throw new Error(
-        `Error retrieving language codes from Apertium: ${detail}`,
-        { cause: error }
-      );
+      throw UpstreamError.wrap(error, 'Error retrieving language codes from Apertium');
     }
 
     listPairs.forEach((p) => codes.add(p.sourceLanguage));
@@ -38,11 +38,7 @@ export class ApertiumClient extends HttpClient implements ITranslator {
         `/listLanguageNames?locale=${locale}${codes.size > 0 ? '&languages=' : ''}${Array.from(codes.values()).join('+')}`
       );
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-
-      throw new Error(`Error retrieving language names from Apertium: ${detail}`,
-        { cause: error }
-      );
+      throw UpstreamError.wrap(error, 'Error retrieving language names from Apertium');
     }
 
     return Array.from(codes).map(
@@ -72,11 +68,7 @@ export class ApertiumClient extends HttpClient implements ITranslator {
         { langpair: `${source}|${target}`, q: text }
       );
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-
-      throw new Error(`Error translating in Apertium: ${detail}`,
-        { cause: error }
-      );
+      throw UpstreamError.wrap(error, 'Error translating in Apertium');
     }
 
     return {

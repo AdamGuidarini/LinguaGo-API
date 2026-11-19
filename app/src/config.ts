@@ -8,4 +8,5 @@ export const config = {
   port: Number(process.env.PORT) || 3000,
   apyUrl: requireEnv('APY_URL'),
   ltUrl: requireEnv('LT_URL'),
+  ltKey: process.env.LT_KEY,
 } as const;

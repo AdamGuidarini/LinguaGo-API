@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { UpstreamError } from '../../errors.ts';
 import { ApertiumClient } from './ApertiumClient.ts';
 
 const pairs = [
@@ -74,19 +75,25 @@ describe('ApertiumClient', () => {
       );
     });
 
-    it('should throw an error in language codes cannot be retrieved', async () => {
+    it('should throw an UpstreamError in language codes cannot be retrieved', async () => {
       reject = 'listPairs';
 
-      await expect(apyClient.getLanguages()).rejects.toThrow(
-        new Error(`Error retrieving language codes from Apertium: ${LANG_CODE_ERR}`)
+      const error = await apyClient.getLanguages().catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(UpstreamError);
+      expect((error as Error).message).toBe(
+        `Error retrieving language codes from Apertium: ${LANG_CODE_ERR}`
       );
     });
 
-    it('should throw an error in language names cannot be retrieved', async () => {
+    it('should throw an UpstreamError in language names cannot be retrieved', async () => {
       reject = 'listLanguageNames';
 
-      await expect(apyClient.getLanguages()).rejects.toThrow(
-        new Error(`Error retrieving language names from Apertium: ${LANG_NAME_ERR}`)
+      const error = await apyClient.getLanguages().catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(UpstreamError);
+      expect((error as Error).message).toBe(
+        `Error retrieving language names from Apertium: ${LANG_NAME_ERR}`
       );
     });
   });

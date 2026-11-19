@@ -12,5 +12,6 @@ export interface ILibreRequest {
     source: string;
     target: string;
     format?: string;
-    alternatives?: number
+    alternatives?: number;
+    api_key?: string;
 }
