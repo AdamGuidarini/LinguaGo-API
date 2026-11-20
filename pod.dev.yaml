@@ -42,5 +42,5 @@ spec:
   volumes:
     - name: app-src
       hostPath:
-        path: ~/Projects/LinguaGo-Server/app/src
+        path: ./app/src
         type: Directory
