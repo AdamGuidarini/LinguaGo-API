@@ -14,6 +14,12 @@ spec:
           value: http://localhost:2737
         - name: LT_URL
           value: http://localhost:5000
+        # Effectively disable throttling in dev while keeping the limiter
+        # middleware (and its RateLimit-* headers) exercised.
+        - name: GENERAL_RATE_LIMIT
+          value: "1000000"
+        - name: TRANSLATION_RATE_LIMIT
+          value: "1000000"
       volumeMounts:
         - name: app-src
           mountPath: /app/src

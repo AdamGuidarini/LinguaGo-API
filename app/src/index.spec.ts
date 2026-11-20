@@ -24,6 +24,10 @@ describe('server', () => {
     vi.stubEnv('APY_URL', 'http://apertium.test');
     vi.stubEnv('LT_URL', 'http://libretranslate.test');
     vi.stubEnv('LT_KEY', 'test-key');
+    // disable rate limiting in tests: the suite makes more translation
+    // requests per minute than the production limit allows
+    vi.stubEnv('GENERAL_RATE_LIMIT', '1000000');
+    vi.stubEnv('TRANSLATION_RATE_LIMIT', '1000000');
     vi.spyOn(express.application, 'listen').mockImplementation(function (this: express.Application) {
       server = createServer(this).listen(0, '127.0.0.1');
       return server;

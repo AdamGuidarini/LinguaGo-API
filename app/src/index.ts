@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { HttpError, UpstreamError } from './errors.ts';
 import { ILanguage, ITranslation, ITranslator } from './interfaces/global-transation-interfaces.ts';
@@ -18,6 +19,25 @@ const translators: Record<Transaltor, ITranslator> = {
 const apertium = translators[Transaltor.APERTIUM];
 const libre = translators[Transaltor.LIBRETRANSLATE];
 
+// General limiter for all routes: 100 requests per 15 minutes per IP
+const generalLimiter = rateLimit({
+  windowMs: config.generalLimitWindow,
+  limit: config.generalRateLimit,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health', // keep health probes unthrottled
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+const translateLimiter = rateLimit({
+  windowMs: config.translationLimitWindow,
+  limit: config.translationRateLimit,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many translation requests, please wait and try again.' }
+});
+
+app.use(generalLimiter);
 app.use(express.json());
 express.json({ limit: '10kb' });
 
@@ -28,7 +48,7 @@ app.get('/libretranslate/languages', async (_req: Request, res: Response<ILangua
   res.send(await libre.getLanguages());
 });
 
-app.post('/libretranslate/translate', async (req: Request, res: Response<ITranslation>) => {
+app.post('/libretranslate/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
   const { source, target, text } = parseTranslationBody(req.body);
   res.json(await libre.translate(source, target, text));
 });
@@ -37,7 +57,7 @@ app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>)
   res.send(await apertium.getLanguages());
 });
 
-app.post('/apertium/translate', async (req: Request, res: Response<ITranslation>) => {
+app.post('/apertium/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
   const { source, target, text } = parseTranslationBody(req.body);
   res.json(await apertium.translate(source, target, text));
 });
@@ -53,7 +73,7 @@ app.get('/translators', (_req: Request, res: Response<Transaltor[]>) => {
  * Unified translation endpoint. Routes to the backend named in the
  * `translator` field ("apertium" or "libretranslate").
  */
-app.post('/translate', async (req: Request, res: Response<ITranslation>) => {
+app.post('/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
   const body: unknown = req.body;
 
   if (
@@ -121,4 +141,8 @@ app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+  console.log(
+    `Rate limits — general: ${config.generalRateLimit} req / ${config.generalLimitWindow}ms per IP, ` +
+    `translation: ${config.translationRateLimit} req / ${config.translationLimitWindow}ms per IP`
+  );
 });
