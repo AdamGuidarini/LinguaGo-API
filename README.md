@@ -140,7 +140,10 @@ The app reads these environment variables (set in the pod files):
 |---|---|---|
 | `APY_URL` | `http://localhost:2737` | Apertium APY base URL |
 | `LT_URL` | `http://localhost:5000` | LibreTranslate base URL |
+| `LT_KEY` | *(unset)* | LibreTranslate API key; only needed for key-protected instances. Set via env / `.env`, never committed |
 | `PORT` | `3000` | Port the Express server listens on |
+
+See `.env.example` for a template. `.env` is gitignored — keep real keys there or in your shell environment only.
 
 Memory limits for each container are set in `pod.yaml` under `resources.limits.memory`.
 
