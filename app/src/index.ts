@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { HttpError, UpstreamError } from './errors.ts';
@@ -72,6 +73,28 @@ const corsConfig = {
 
 app.use(generalLimiter);
 app.use(cors(corsConfig));
+
+/**
+ * Security headers. This is a pure JSON API consumed by a browser
+ * extension — it never serves HTML — so the CSP can be maximally
+ * restrictive. Do NOT enable COEP (require-corp): it would block
+ * cross-origin loading of these responses.
+ */
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ['\'none\''],
+      frameAncestors: ['\'none\'']
+    }
+  },
+  strictTransportSecurity: {
+    maxAge: 31536000, // 1 year; includeSubDomains since we have no subdomains to protect differently
+    includeSubDomains: true
+  },
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+  referrerPolicy: { policy: 'no-referrer' }
+}));
+
 app.use(express.json({ limit: '10kb' }));
 
 /**
