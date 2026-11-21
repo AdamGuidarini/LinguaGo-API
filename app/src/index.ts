@@ -1,4 +1,6 @@
+import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { HttpError, UpstreamError } from './errors.ts';
@@ -25,7 +27,8 @@ const generalLimiter = rateLimit({
   limit: config.generalRateLimit,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  skip: (req) => req.path === '/health', // keep health probes unthrottled
+  // keep health probes and CORS preflights unthrottled
+  skip: (req) => req.path === '/health' || req.method === 'OPTIONS',
   message: { error: 'Too many requests, please try again later.' }
 });
 
@@ -37,26 +40,88 @@ const translateLimiter = rateLimit({
   message: { error: 'Too many translation requests, please wait and try again.' }
 });
 
+/**
+ * CORS origins, driven entirely by env config:
+ * - no Origin header (curl, server-to-server) -> allowed
+ * - CORS_ALLOWED_ORIGINS='*' -> any origin (dev only!)
+ * - CORS_ALLOW_EXTENSION_ORIGINS=true (default) -> any moz-extension:// or
+ *   chrome-extension:// origin. Extensions have no stable origin: Firefox
+ *   add-ons send `moz-extension://<uuid>/` with a UUID that is random per
+ *   install/profile, so they can only be allowed by scheme, never by value.
+ * - CORS_DOMAIN / CORS_ALLOWED_ORIGINS -> exact web origins (hosted frontend)
+ */
+const corsAllowedOrigins = new Set(
+  [config.corsDomain, ...config.corsAllowedOrigins].filter((o): o is string => Boolean(o))
+);
+
+const corsConfig = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+    if (corsAllowedOrigins.has('*')) return callback(null, true);
+    if (config.corsAllowExtensionOrigins && /^(moz-extension):\/\//.test(origin)) {
+      return callback(null, true);
+    }
+    if (corsAllowedOrigins.has(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: config.corsAllowedHeaders,
+  // let extension JS read the rate-limit headers sent by express-rate-limit (draft-7)
+  exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+  optionsSuccessStatus: 200
+};
+
 app.use(generalLimiter);
-app.use(express.json());
-express.json({ limit: '10kb' });
+app.use(cors(corsConfig));
 
 /**
- * Retrieves all languages and pairs from Libre Translate
+ * Security headers. This is a pure JSON API consumed by a browser
+ * extension — it never serves HTML — so the CSP can be maximally
+ * restrictive. Do NOT enable COEP (require-corp): it would block
+ * cross-origin loading of these responses.
+ */
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ['\'none\''],
+      frameAncestors: ['\'none\'']
+    }
+  },
+  strictTransportSecurity: {
+    maxAge: 31536000, // 1 year; includeSubDomains since we have no subdomains to protect differently
+    includeSubDomains: true
+  },
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+  referrerPolicy: { policy: 'no-referrer' }
+}));
+
+app.use(express.json({ limit: '10kb' }));
+
+/**
+ * Retrieves all languages and pairs from LibreTranslate
  */
 app.get('/libretranslate/languages', async (_req: Request, res: Response<ILanguage[]>) => {
   res.send(await libre.getLanguages());
 });
 
+/**
+ * Translate via LibreTranslate
+ */
 app.post('/libretranslate/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
   const { source, target, text } = parseTranslationBody(req.body);
   res.json(await libre.translate(source, target, text));
 });
 
+/**
+ * Retrieve all Apertium language pairs
+ */
 app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>) => {
   res.send(await apertium.getLanguages());
 });
 
+/**
+ * Translate via Apertium
+ */
 app.post('/apertium/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
   const { source, target, text } = parseTranslationBody(req.body);
   res.json(await apertium.translate(source, target, text));
@@ -91,14 +156,23 @@ app.post('/translate', translateLimiter, async (req: Request, res: Response<ITra
   res.json(await client.translate(source, target, text));
 });
 
+/**
+ * Basic API check
+ */
 app.get('/', (_req, res) => {
   res.json({ name: 'linguago-api', status: 'ok' });
 });
 
+/**
+ * API Health check
+ */
 app.get('/health', (_req, res) => {
   res.send('ok');
 });
 
+/**
+ * Invalid route handler
+ */
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
