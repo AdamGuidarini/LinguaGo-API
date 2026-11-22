@@ -89,6 +89,7 @@ app.use(express.json({ limit: '10kb' }));
  * dist/paths/*.js by tsc. The directory is resolved relative to this module,
  * so it points at src/paths under vitest/tsx and dist/paths under node dist.
  * The glob matches both extensions so either runtime finds the route files.
+ * pathsIgnore keeps colocated *.spec.ts test files from being loaded as routes.
  */
 await initialize({
   app,
@@ -96,6 +97,7 @@ await initialize({
   paths: fileURLToPath(new URL('./paths/', import.meta.url)),
   routesGlob: '**/*.{js,ts}',
   routesIndexFileRegExp: /(?:index)?\.(js|ts)$/,
+  pathsIgnore: /\.spec$/,
 });
 
 /**
