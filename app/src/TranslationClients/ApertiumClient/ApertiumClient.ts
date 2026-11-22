@@ -1,11 +1,11 @@
 import { UpstreamError } from '../../errors.ts';
-import {
+import type {
   IApertiumLanguageCode,
   IApertiumLanguageNames,
   IApertiumResponse,
   IApertiumTranslationRepsonse
 } from '../../interfaces/apertium-interfaces.ts';
-import { ILanguage, ITranslation, ITranslator } from '../../interfaces/global-transation-interfaces.ts';
+import type { ILanguage, ITranslation, ITranslator } from '../../interfaces/global-transation-interfaces.ts';
 import { Transaltor } from '../../interfaces/translator.ts';
 import { HttpClient } from '../HttpClient/HttpClient.ts';
 

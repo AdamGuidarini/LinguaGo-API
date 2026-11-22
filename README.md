@@ -160,6 +160,28 @@ Memory limits for each container are set in `pod.yaml` under `resources.limits.m
 | `GET /libretranslate/languages` | LibreTranslate languages |
 | `POST /libretranslate/translate` | Translate via LibreTranslate |
 
+### API documentation
+
+The API ships an [OpenAPI 3](https://spec.openapis.org/oas/v3.0.3) document (`app/src/openapi.ts`), served two ways:
+
+| URL | Format | Use |
+|---|---|---|
+| `http://localhost:3000/docs` | Swagger UI (HTML) | Browse and try endpoints in a browser |
+| `http://localhost:3000/api-docs` | OpenAPI 3.0.3 JSON | SDK/client codegen (openapi-generator, kiota, orval, ...) |
+
+With the pod running (`make dev` or `make up`), just open `http://localhost:3000/docs` — every documented operation has a **Try it out** button. The translate endpoints need the `apy`/`lt` containers up (i.e. the full pod); `/`, `/health`, and `/translators` work standalone.
+
+To view the UI without Podman, the server only needs the env vars to be set (upstreams are contacted only when a translate endpoint is called):
+
+```bash
+cd app
+yarn build
+APY_URL=http://localhost:2737 LT_URL=http://localhost:5000 LT_KEY=dummy PORT=3000 node dist/index.js
+# then open http://localhost:3000/docs
+```
+
+To document a new endpoint: add a path entry in `app/src/openapi.ts` and a route file under `app/src/paths/` matching the URL path (`paths/apertium/translate.ts` → `/apertium/translate`). Request bodies that violate the schema are rejected with HTTP 400 automatically.
+
 ### Unified translation
 
 `POST /translate` accepts a JSON body with non-empty `source`, `target`, `text`

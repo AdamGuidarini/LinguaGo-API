@@ -1,11 +1,19 @@
 import { UpstreamError } from '../../errors.ts';
 
 export class HttpClient {
+  protected readonly baseUrl: string;
+  private readonly timeoutMs: number;
+  private readonly service: string;
+
   constructor(
-    protected readonly baseUrl: string,
-    private readonly timeoutMs = 10_000,
-    private readonly service = 'Upstream',
-  ) { }
+    baseUrl: string,
+    timeoutMs = 10_000,
+    service = 'Upstream',
+  ) {
+    this.baseUrl = baseUrl;
+    this.timeoutMs = timeoutMs;
+    this.service = service;
+  }
 
   protected async get<T>(path: string, params?: Record<string, string>): Promise<T> {
     const query = params ? `?${new URLSearchParams(params)}` : '';
