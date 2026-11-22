@@ -1,17 +1,18 @@
 import cors from 'cors';
-import express, { NextFunction, Request, Response } from 'express';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { initialize } from 'express-openapi';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 import { fileURLToPath } from 'node:url';
-import { config } from './config.js';
-import { apiDoc } from './openapi.js';
+import { config } from './config.ts';
 import { HttpError, UpstreamError } from './errors.ts';
 import type { ILanguage, ITranslation } from './interfaces/global-transation-interfaces.ts';
 import { Transaltor } from './interfaces/translator.ts';
-import { parseTranslationBody } from './validation.ts';
-import { translators } from './translators.ts';
+import { apiDoc } from './openapi.ts';
 import { translateLimiter } from './rate-limiters.ts';
+import { translators } from './translators.ts';
+import { parseTranslationBody } from './validation.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -100,13 +101,6 @@ app.get('/libretranslate/languages', async (_req: Request, res: Response<ILangua
 app.post('/libretranslate/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
   const { source, target, text } = parseTranslationBody(req.body);
   res.json(await libre.translate(source, target, text));
-});
-
-/**
- * Retrieve all Apertium language pairs
- */
-app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>) => {
-  res.send(await apertium.getLanguages());
 });
 
 /**

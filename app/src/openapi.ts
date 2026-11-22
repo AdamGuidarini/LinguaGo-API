@@ -143,9 +143,28 @@ export const apiDoc: OpenAPIV3.Document = {
           }
         }
       }
+    },
+    '/apertium/languages': {
+      get: {
+        operationId: 'apertium-languages',
+        tags: ['languages', 'apertium'],
+        summary: 'Retrieves Apertium\'s supported language pairs',
+        responses: {
+          '200': {
+            description: 'Successfully retrieved support language pairs',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Language' }
+                }
+              }
+            }
+          }
+        }
+      }
     }
-    // TODO: ''/apertium/languages', '/apertium/translate',
-    //       '/libretranslate/languages', '/libretranslate/translate'
+    // TODO: '/libretranslate/languages', '/libretranslate/translate'
   },
   components: {
     schemas: {
