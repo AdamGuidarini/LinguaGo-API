@@ -200,6 +200,20 @@ app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
+  // express-openapi request-validation errors (thrown before route handlers
+  // run). Shape: { status: number, errors: [...] } from openapi-request-validator.
+  if (
+    typeof err === 'object' && err !== null &&
+    typeof (err as { status?: unknown }).status === 'number' &&
+    Array.isArray((err as { errors?: unknown }).errors)
+  ) {
+    const validationError = err as { status: number; errors: { message?: string }[] };
+    res.status(validationError.status).json({
+      error: validationError.errors[0]?.message ?? 'Invalid request'
+    });
+    return;
+  }
+
   // body-parser rejects malformed JSON bodies with a SyntaxError carrying status 400
   if (err instanceof SyntaxError) {
     res.status(400).json({ error: 'Malformed JSON in request body' });
