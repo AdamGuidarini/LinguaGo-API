@@ -26,6 +26,49 @@ export const apiDoc: OpenAPIV3.Document = {
     { name: 'translate', description: 'Translation endpoints' },
   ],
   paths: {
+    '/': {
+      get: {
+        operationId: 'root',
+        tags: ['root'],
+        summary: 'Root endpoint, provides name and status',
+        responses: {
+          '200': {
+            description: 'ok',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', example: 'linguago-api' },
+                    status: { type: 'string', example: 'ok' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/health': {
+      get: {
+        operationId: 'health',
+        tags: ['meta'],
+        summary: 'Basic API health check',
+        responses: {
+          '200': {
+            description: 'API is up and running',
+            content: {
+              'text/plain': {
+                schema: {
+                  type: 'string',
+                  example: 'ok'
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     '/translators': {
       get: {
         operationId: 'listTranslators',
@@ -75,28 +118,33 @@ export const apiDoc: OpenAPIV3.Document = {
         }
       }
     },
-    '/health': {
-      get: {
-        operationId: 'health',
-        tags: ['meta'],
-        summary: 'Basic API health check',
+    '/apertium/translate': {
+      post: {
+        operationId: 'apertium-translate',
+        tags: ['apertium', 'translate'],
+        summary: 'Translates provided text from source to target in Apertium',
+        requestBody: {
+          description: 'Text to translate, source/target languages in Apertium',
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/TranslationRequest' }
+            }
+          }
+        },
         responses: {
           '200': {
-            description: 'API is up and running',
+            description: 'Translated successfully',
             content: {
-              'text/plain': {
-                schema: {
-                  type: 'string',
-                  example: 'ok'
-                }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Translation' }
               }
             }
           }
         }
       }
     }
-    // TODO: '/',
-    //       '/apertium/languages', '/apertium/translate',
+    // TODO: ''/apertium/languages', '/apertium/translate',
     //       '/libretranslate/languages', '/libretranslate/translate'
   },
   components: {

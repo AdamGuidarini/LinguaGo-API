@@ -110,21 +110,6 @@ app.get('/apertium/languages', async (_req: Request, res: Response<ILanguage[]>)
 });
 
 /**
- * Translate via Apertium
- */
-app.post('/apertium/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
-  const { source, target, text } = parseTranslationBody(req.body);
-  res.json(await apertium.translate(source, target, text));
-});
-
-/**
- * Basic API check
- */
-app.get('/', (_req, res) => {
-  res.json({ name: 'linguago-api', status: 'ok' });
-});
-
-/**
  * OpenAPI integration. Serves the spec as JSON at GET /api-docs and registers
  * every route file in the paths directory against its entry in `apiDoc`.
  * Documented operations get request/response validation for free.
