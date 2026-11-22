@@ -20,6 +20,35 @@ describe('server', () => {
     await stopTestServer(server);
   });
 
+  describe('API docs', () => {
+    it('serves the OpenAPI document as JSON at /api-docs', async () => {
+      const response = await sendRequest(`${baseUrl}/api-docs`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toContain('application/json');
+      const doc = await response.json();
+      expect(doc.openapi).toBe('3.0.3');
+      expect(Object.keys(doc.paths).sort()).toEqual([
+        '/',
+        '/apertium/languages',
+        '/apertium/translate',
+        '/health',
+        '/libretranslate/languages',
+        '/libretranslate/translate',
+        '/translate',
+        '/translators'
+      ]);
+    });
+
+    it('serves Swagger UI at /docs', async () => {
+      const response = await sendRequest(`${baseUrl}/docs`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toContain('text/html');
+      expect(await response.text()).toContain('swagger-ui');
+    });
+  });
+
   describe('unmatched routes', () => {
     it('returns a JSON 404', async () => {
       const response = await sendRequest(`${baseUrl}/does-not-exist`);

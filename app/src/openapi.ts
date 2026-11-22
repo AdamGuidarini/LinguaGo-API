@@ -3,13 +3,10 @@ import type { OpenAPIV3 } from 'openapi-types';
 /**
  * Central OpenAPI document for LinguaGo API.
  *
- * express-openapi serves this as JSON at GET /api-docs (default docsPath).
- *
- * Starter state: only GET /translators is documented, as the worked example.
- * To document another endpoint:
- *   1. add a path entry here (path -> method -> operationId + responses)
- *   2. add a handler under that operationId in the `operations` map in index.ts
- *      (and remove the old inline route for that path)
+ * Served as JSON at GET /api-docs (express-openapi default docsPath) for SDK
+ * codegen, and rendered as Swagger UI at /docs (see index.ts). To document an
+ * endpoint, add a path entry here (path -> method -> operationId + responses);
+ * the handler lives in the matching route file under src/paths/.
  */
 export const apiDoc: OpenAPIV3.Document = {
   openapi: '3.0.3',

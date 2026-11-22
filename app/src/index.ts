@@ -5,6 +5,7 @@ import { initialize } from 'express-openapi';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { fileURLToPath } from 'node:url';
+import swaggerUi from 'swagger-ui-express';
 import { config } from './config.ts';
 import { HttpError, UpstreamError } from './errors.ts';
 import { apiDoc } from './openapi.ts';
@@ -58,15 +59,18 @@ app.use(generalLimiter);
 app.use(cors(corsConfig));
 
 /**
- * Security headers. This is a pure JSON API consumed by a browser
- * extension — it never serves HTML — so the CSP can be maximally
- * restrictive. Do NOT enable COEP (require-corp): it would block
+ * Security headers. The API itself is a pure JSON API consumed by a browser
+ * extension and never serves HTML — but /docs serves Swagger UI, whose
+ * self-hosted JS/CSS must be allowed. script/style from 'self' only; no
+ * inline scripts. Do NOT enable COEP (require-corp): it would block
  * cross-origin loading of these responses.
  */
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ['\'none\''],
+      scriptSrc: ['\'self\''],
+      styleSrc: ['\'self\'', '\'unsafe-inline\''],
       frameAncestors: ['\'none\'']
     }
   },
@@ -79,6 +83,12 @@ app.use(helmet({
 }));
 
 app.use(express.json({ limit: '10kb' }));
+
+/**
+ * Interactive API docs (Swagger UI) at /docs. The machine-readable OpenAPI
+ * document remains available as JSON at GET /api-docs for SDK codegen.
+ */
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(apiDoc));
 
 /**
  * OpenAPI integration. Serves the spec as JSON at GET /api-docs and registers
