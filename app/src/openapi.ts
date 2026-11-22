@@ -163,8 +163,53 @@ export const apiDoc: OpenAPIV3.Document = {
           }
         }
       }
+    },
+    '/libretranslate/translate': {
+      post: {
+        operationId: 'libretranslate-translate',
+        tags: ['libretranslate', 'translate'],
+        summary: 'Translates provided text from source to target in libretranslate',
+        requestBody: {
+          description: 'Text to translate, source/target languages in libretranslate',
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/TranslationRequest' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Translated successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Translation' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/libretranslate/languages': {
+      get: {
+        operationId: 'libretranslate-languages',
+        tags: ['languages', 'libretranslate'],
+        summary: 'Retrieves LibreTranslate\'s supported language pairs',
+        responses: {
+          '200': {
+            description: 'Successfully retrieved support language pairs',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Language' }
+                }
+              }
+            }
+          }
+        }
+      }
     }
-    // TODO: '/libretranslate/languages', '/libretranslate/translate'
   },
   components: {
     schemas: {

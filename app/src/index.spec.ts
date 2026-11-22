@@ -272,14 +272,25 @@ describe('server', () => {
       });
     });
 
+    // Bodies that violate the OpenAPI schema are rejected by express-openapi's
+    // request validator before the handler runs (message comes from the schema
+    // validator, e.g. "must have required property 'source'").
     it.each([
       {},
       { source: 'en', target: 'es' },
-      { source: 'en', target: 'es', text: 123 },
-      { source: ' ', target: 'es', text: 'hello' }
-    ])('rejects invalid request fields: %j', async (body) => {
+      { source: 'en', target: 'es', text: 123 }
+    ])('rejects schema-invalid request fields: %j', async (body) => {
       const fetchMock = vi.spyOn(globalThis, 'fetch');
       const response = await postLibreTranslate(body);
+
+      expect(response.status).toBe(400);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    // Blank strings pass the schema and are rejected by the handler's own validation.
+    it('rejects blank request fields', async () => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch');
+      const response = await postLibreTranslate({ source: ' ', target: 'es', text: 'hello' });
 
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({ error: 'source, target, and text must be non-empty strings' });

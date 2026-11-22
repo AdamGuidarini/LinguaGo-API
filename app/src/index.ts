@@ -1,24 +1,16 @@
 import cors from 'cors';
-import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import { initialize } from 'express-openapi';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.ts';
 import { HttpError, UpstreamError } from './errors.ts';
-import type { ILanguage, ITranslation } from './interfaces/global-transation-interfaces.ts';
-import { Transaltor } from './interfaces/translator.ts';
 import { apiDoc } from './openapi.ts';
-import { translateLimiter } from './rate-limiters.ts';
-import { translators } from './translators.ts';
-import { parseTranslationBody } from './validation.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-
-export const apertium = translators[Transaltor.APERTIUM];
-export const libre = translators[Transaltor.LIBRETRANSLATE];
 
 // General limiter for all routes: 100 requests per 15 minutes per IP
 const generalLimiter = rateLimit({
@@ -87,21 +79,6 @@ app.use(helmet({
 }));
 
 app.use(express.json({ limit: '10kb' }));
-
-/**
- * Retrieves all languages and pairs from LibreTranslate
- */
-app.get('/libretranslate/languages', async (_req: Request, res: Response<ILanguage[]>) => {
-  res.send(await libre.getLanguages());
-});
-
-/**
- * Translate via LibreTranslate
- */
-app.post('/libretranslate/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
-  const { source, target, text } = parseTranslationBody(req.body);
-  res.json(await libre.translate(source, target, text));
-});
 
 /**
  * OpenAPI integration. Serves the spec as JSON at GET /api-docs and registers
