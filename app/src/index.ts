@@ -2,24 +2,22 @@ import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { initialize } from 'express-openapi';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
+import { apiDoc } from './openapi.js';
 import { HttpError, UpstreamError } from './errors.ts';
-import { ILanguage, ITranslation, ITranslator } from './interfaces/global-transation-interfaces.ts';
+import type { ILanguage, ITranslation } from './interfaces/global-transation-interfaces.ts';
 import { Transaltor } from './interfaces/translator.ts';
-import { ApertiumClient } from './TranslationClients/ApertiumClient/ApertiumClient.ts';
-import { LibreTranslateClient } from './TranslationClients/LibreTranslateClient/LibreTranslateClient.ts';
 import { parseTranslationBody } from './validation.ts';
+import { translators } from './translators.ts';
+import { translateLimiter } from './rate-limiters.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-const translators: Record<Transaltor, ITranslator> = {
-  [Transaltor.APERTIUM]: new ApertiumClient(config.apyUrl),
-  [Transaltor.LIBRETRANSLATE]: new LibreTranslateClient(config.ltUrl, config.ltKey),
-};
-
-const apertium = translators[Transaltor.APERTIUM];
-const libre = translators[Transaltor.LIBRETRANSLATE];
+export const apertium = translators[Transaltor.APERTIUM];
+export const libre = translators[Transaltor.LIBRETRANSLATE];
 
 // General limiter for all routes: 100 requests per 15 minutes per IP
 const generalLimiter = rateLimit({
@@ -30,14 +28,6 @@ const generalLimiter = rateLimit({
   // keep health probes and CORS preflights unthrottled
   skip: (req) => req.path === '/health' || req.method === 'OPTIONS',
   message: { error: 'Too many requests, please try again later.' }
-});
-
-const translateLimiter = rateLimit({
-  windowMs: config.translationLimitWindow,
-  limit: config.translationRateLimit,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: { error: 'Too many translation requests, please wait and try again.' }
 });
 
 /**
@@ -128,35 +118,6 @@ app.post('/apertium/translate', translateLimiter, async (req: Request, res: Resp
 });
 
 /**
- * Lists the available translation backends
- */
-app.get('/translators', (_req: Request, res: Response<Transaltor[]>) => {
-  res.json(Object.values(Transaltor));
-});
-
-/**
- * Unified translation endpoint. Routes to the backend named in the
- * `translator` field ("apertium" or "libretranslate").
- */
-app.post('/translate', translateLimiter, async (req: Request, res: Response<ITranslation>) => {
-  const body: unknown = req.body;
-
-  if (
-    typeof body !== 'object' || body === null ||
-    !('translator' in body) ||
-    typeof body.translator !== 'string' ||
-    !Object.values(Transaltor).includes(body.translator as Transaltor)
-  ) {
-    throw new HttpError(400, `translator must be one of: ${Object.values(Transaltor).join(', ')}`);
-  }
-
-  const { source, target, text } = parseTranslationBody(body);
-  const client = translators[body.translator as Transaltor];
-
-  res.json(await client.translate(source, target, text));
-});
-
-/**
  * Basic API check
  */
 app.get('/', (_req, res) => {
@@ -168,6 +129,24 @@ app.get('/', (_req, res) => {
  */
 app.get('/health', (_req, res) => {
   res.send('ok');
+});
+
+/**
+ * OpenAPI integration. Serves the spec as JSON at GET /api-docs and registers
+ * every route file in the paths directory against its entry in `apiDoc`.
+ * Documented operations get request/response validation for free.
+ *
+ * Route files are authored in TypeScript (src/paths/*.ts) and compiled to
+ * dist/paths/*.js by tsc. The directory is resolved relative to this module,
+ * so it points at src/paths under vitest/tsx and dist/paths under node dist.
+ * The glob matches both extensions so either runtime finds the route files.
+ */
+await initialize({
+  app,
+  apiDoc,
+  paths: fileURLToPath(new URL('./paths/', import.meta.url)),
+  routesGlob: '**/*.{js,ts}',
+  routesIndexFileRegExp: /(?:index)?\.(js|ts)$/,
 });
 
 /**
@@ -187,18 +166,36 @@ app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
-  if (err instanceof HttpError) {
-    res.status(err.status).json({ error: err.message });
+  // Route files under paths/ are loaded by express-openapi via a native
+  // dynamic import under vitest, which produces a second copy of the modules
+  // they import — so instanceof fails across that boundary. Fall back to the
+  // error `name`, which survives module duplication. (Shape-based checks like
+  // `typeof err.status === 'number'` are NOT safe: body-parser errors also
+  // carry a numeric status.)
+  const httpError = err instanceof HttpError
+    ? err
+    : err instanceof Error && err.name === 'HttpError'
+      ? err as HttpError
+      : null;
+
+  if (httpError) {
+    res.status(httpError.status).json({ error: httpError.message });
     return;
   }
 
-  if (err instanceof UpstreamError) {
-    console.error(`${err.service} request failed:`, err);
+  const upstreamError = err instanceof UpstreamError
+    ? err
+    : err instanceof Error && err.name === 'UpstreamError'
+      ? err as UpstreamError
+      : null;
 
-    if (err.timeout) {
-      res.status(504).json({ error: `${err.service} timed out` });
+  if (upstreamError) {
+    console.error(`${upstreamError.service} request failed:`, upstreamError);
+
+    if (upstreamError.timeout) {
+      res.status(504).json({ error: `${upstreamError.service} timed out` });
     } else {
-      res.status(502).json({ error: `${err.service} unavailable` });
+      res.status(502).json({ error: `${upstreamError.service} unavailable` });
     }
     return;
   }

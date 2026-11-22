@@ -1,12 +1,15 @@
 import { UpstreamError } from '../../errors.ts';
-import { ILanguage, ITranslation, ITranslator } from '../../interfaces/global-transation-interfaces.ts';
-import { ILibreRequest, ILibreTranslation } from '../../interfaces/libre-translate-interfaces.ts';
+import type { ILanguage, ITranslation, ITranslator } from '../../interfaces/global-transation-interfaces.ts';
+import type { ILibreRequest, ILibreTranslation } from '../../interfaces/libre-translate-interfaces.ts';
 import { Transaltor } from '../../interfaces/translator.ts';
 import { HttpClient } from '../HttpClient/HttpClient.ts';
 
 export class LibreTranslateClient extends HttpClient implements ITranslator {
-  constructor(baseUrl: string, private readonly apiKey?: string) {
+  private readonly apiKey?: string;
+
+  constructor(baseUrl: string, apiKey?: string) {
     super(baseUrl, undefined, 'LibreTranslate');
+    this.apiKey = apiKey;
   }
 
   /**

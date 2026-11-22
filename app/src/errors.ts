@@ -3,11 +3,14 @@
  * (e.g. request validation failures). The message is safe to expose.
  */
 export class HttpError extends Error {
+  readonly status: number;
+
   constructor(
-    public readonly status: number,
+    status: number,
     message: string,
   ) {
     super(message);
+    this.status = status;
     this.name = 'HttpError';
   }
 }
