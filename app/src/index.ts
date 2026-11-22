@@ -125,13 +125,6 @@ app.get('/', (_req, res) => {
 });
 
 /**
- * API Health check
- */
-app.get('/health', (_req, res) => {
-  res.send('ok');
-});
-
-/**
  * OpenAPI integration. Serves the spec as JSON at GET /api-docs and registers
  * every route file in the paths directory against its entry in `apiDoc`.
  * Documented operations get request/response validation for free.

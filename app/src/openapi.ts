@@ -74,8 +74,28 @@ export const apiDoc: OpenAPIV3.Document = {
           }
         }
       }
+    },
+    '/health': {
+      get: {
+        operationId: 'health',
+        tags: ['meta'],
+        summary: 'Basic API health check',
+        responses: {
+          '200': {
+            description: 'API is up and running',
+            content: {
+              'text/plain': {
+                schema: {
+                  type: 'string',
+                  example: 'ok'
+                }
+              }
+            }
+          }
+        }
+      }
     }
-    // TODO: '/', '/health',
+    // TODO: '/',
     //       '/apertium/languages', '/apertium/translate',
     //       '/libretranslate/languages', '/libretranslate/translate'
   },
